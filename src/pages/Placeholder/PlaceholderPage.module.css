@@ -1,0 +1,19 @@
+.page {
+  max-width: 960px;
+}
+
+.card {
+  max-width: 640px;
+}
+
+.copy {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.copy code {
+  font-size: 12px;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+}

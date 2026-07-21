@@ -1,0 +1,266 @@
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--space-4);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.title {
+  font-size: clamp(24px, 3vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+}
+
+.subtitle {
+  margin-top: 6px;
+  margin-bottom: var(--space-6);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.formCard,
+.successCard,
+.nextStepsCard {
+  width: 100%;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.formActions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+@media (min-width: 640px) {
+  .formActions {
+    grid-template-columns: 1.2fr 1fr;
+  }
+}
+
+.successHero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  margin-bottom: var(--space-6);
+}
+
+.successIcon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-green-soft);
+  color: var(--color-green);
+}
+
+.successTitle {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.successSubtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.detailsBox {
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+  border-radius: var(--radius-md);
+  background: #f7f8fa;
+  border: 1px solid var(--color-border);
+}
+
+.detailsHeading {
+  margin-bottom: var(--space-4);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4) var(--space-6);
+  margin: 0;
+}
+
+.detailsGrid dt {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.detailsGrid dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.levelValue {
+  color: var(--color-primary) !important;
+}
+
+.linkBlock {
+  margin-bottom: var(--space-4);
+}
+
+.linkLabel {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.linkRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+
+.linkInput {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: #fafbfc;
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.copyButton {
+  flex-shrink: 0;
+  height: 44px;
+}
+
+.shareRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 640px) {
+  .shareRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .shareRow > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.qrBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  border: 1px dashed var(--color-primary-muted);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+}
+
+.qrPlaceholder {
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 148px;
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.qrHint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  word-break: break-all;
+  max-width: 420px;
+}
+
+.nextStepsCard {
+  margin-top: var(--space-4);
+  background: #f7f8fa;
+}
+
+.nextStepsTitle {
+  margin-bottom: var(--space-4);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.nextStepsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nextStepItem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.stepNumber {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.footerActions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+@media (min-width: 640px) {
+  .footerActions {
+    grid-template-columns: 1fr 1fr;
+  }
+}

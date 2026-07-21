@@ -1,0 +1,158 @@
+import {apiRequest} from './client';
+import type {
+  PendingApprovalRow,
+  ReceiverCredentials,
+  ReceiverListItem,
+  ReceiverProfile,
+  ReceiverStatus,
+} from '../data/mockReceivers';
+
+export type Agent = {
+  id: string;
+  email: string;
+  name: string;
+  phone: string;
+  agentCode: string;
+  avatarUrl: string;
+};
+
+export type ReceiverStats = {
+  total: number;
+  active: number;
+  totalCalls: number;
+  totalEarnings: number;
+  stats: Array<{id: string; label: string; value: string}>;
+};
+
+export type CreatedReceiverResult = {
+  receiver: ReceiverProfile & {statusKey?: string; onboardingLink?: string};
+  onboardingLink: string;
+};
+
+export async function loginAgent(email: string, password: string) {
+  return apiRequest<{token: string; agent: Agent}>('/agent/login', {
+    method: 'POST',
+    body: JSON.stringify({email, password}),
+  });
+}
+
+export async function fetchAgentMe() {
+  return apiRequest<{agent: Agent}>('/agent/me');
+}
+
+export async function updateAgentProfile(payload: {
+  name?: string;
+  phone?: string;
+  avatarUrl?: string;
+}) {
+  return apiRequest<{agent: Agent}>('/agent/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAgentPassword(
+  currentPassword: string,
+  newPassword: string,
+) {
+  return apiRequest<Record<string, never>>('/agent/update-password', {
+    method: 'POST',
+    body: JSON.stringify({currentPassword, newPassword}),
+  });
+}
+
+export async function createReceiver(payload: {
+  name: string;
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  level: number;
+  asDraft?: boolean;
+}) {
+  return apiRequest<CreatedReceiverResult>('/agent/receivers', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function listReceivers(params?: {
+  status?: ReceiverStatus | 'All';
+  q?: string;
+}) {
+  const search = new URLSearchParams();
+  if (params?.status && params.status !== 'All') {
+    search.set('status', params.status);
+  }
+  if (params?.q) search.set('q', params.q);
+  const qs = search.toString();
+  return apiRequest<{receivers: ReceiverListItem[]}>(
+    `/agent/receivers${qs ? `?${qs}` : ''}`,
+  );
+}
+
+export async function fetchReceiverStats() {
+  return apiRequest<ReceiverStats>('/agent/receivers/stats');
+}
+
+export async function listPendingApprovals() {
+  return apiRequest<{pending: PendingApprovalRow[]}>(
+    '/agent/receivers/pending',
+  );
+}
+
+export async function fetchReceiver(id: string) {
+  return apiRequest<{receiver: ReceiverProfile}>(`/agent/receivers/${id}`);
+}
+
+export async function approveReceiver(id: string) {
+  return apiRequest<{receiver: ReceiverProfile}>(
+    `/agent/receivers/${id}/approve`,
+    {method: 'POST'},
+  );
+}
+
+export async function rejectReceiver(id: string, reason: string) {
+  return apiRequest<{receiver: ReceiverProfile}>(
+    `/agent/receivers/${id}/reject`,
+    {method: 'POST', body: JSON.stringify({reason})},
+  );
+}
+
+export async function requestReceiverChanges(id: string, note?: string) {
+  return apiRequest<{receiver: ReceiverProfile}>(
+    `/agent/receivers/${id}/request-changes`,
+    {method: 'POST', body: JSON.stringify({note})},
+  );
+}
+
+export async function terminateReceiver(id: string, reason?: string) {
+  return apiRequest<{receiver: ReceiverProfile}>(
+    `/agent/receivers/${id}/terminate`,
+    {method: 'POST', body: JSON.stringify({reason})},
+  );
+}
+
+export async function activateReceiver(id: string) {
+  return apiRequest<{receiver: ReceiverProfile}>(
+    `/agent/receivers/${id}/activate`,
+    {method: 'POST'},
+  );
+}
+
+export async function listCredentialReceivers() {
+  return apiRequest<{receivers: ReceiverListItem[]}>(
+    '/agent/receivers/credentials',
+  );
+}
+
+export async function fetchReceiverCredentials(id: string) {
+  return apiRequest<ReceiverCredentials & {id: string; name: string}>(
+    `/agent/receivers/${id}/credentials`,
+  );
+}
+
+export async function submitReceiverForReview(id: string) {
+  return apiRequest<{receiver: ReceiverProfile}>(
+    `/agent/receivers/${id}/submit-for-review`,
+    {method: 'POST', body: JSON.stringify({})},
+  );
+}

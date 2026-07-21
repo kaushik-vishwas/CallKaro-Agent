@@ -1,0 +1,75 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 88px;
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition),
+    border-color var(--transition);
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.outline {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+.outline:hover {
+  border-color: var(--color-primary-muted);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.primary .icon {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.outline .icon {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.description {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.outline .description {
+  color: var(--color-text-secondary);
+  opacity: 1;
+}

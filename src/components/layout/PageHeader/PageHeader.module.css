@@ -1,0 +1,23 @@
+.header {
+  margin-bottom: var(--space-6);
+  padding-right: 48px;
+}
+
+@media (min-width: 1024px) {
+  .header {
+    padding-right: 0;
+  }
+}
+
+.title {
+  font-size: clamp(24px, 3vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+}
+
+.subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
