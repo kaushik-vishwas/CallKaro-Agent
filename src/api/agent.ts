@@ -1,4 +1,5 @@
 import {apiRequest} from './client';
+import {toClientOnboardingLink} from '../config/env';
 import type {
   PendingApprovalRow,
   ReceiverCredentials,
@@ -68,10 +69,20 @@ export async function createReceiver(payload: {
   level: number;
   asDraft?: boolean;
 }) {
-  return apiRequest<CreatedReceiverResult>('/agent/receivers', {
+  const result = await apiRequest<CreatedReceiverResult>('/agent/receivers', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+
+  const onboardingLink = toClientOnboardingLink(result.onboardingLink);
+  return {
+    ...result,
+    onboardingLink,
+    receiver: {
+      ...result.receiver,
+      onboardingLink,
+    },
+  };
 }
 
 export async function listReceivers(params?: {
@@ -100,7 +111,20 @@ export async function listPendingApprovals() {
 }
 
 export async function fetchReceiver(id: string) {
-  return apiRequest<{receiver: ReceiverProfile}>(`/agent/receivers/${id}`);
+  const result = await apiRequest<{
+    receiver: ReceiverProfile & {onboardingLink?: string};
+  }>(`/agent/receivers/${id}`);
+
+  if (result.receiver?.onboardingLink) {
+    return {
+      ...result,
+      receiver: {
+        ...result.receiver,
+        onboardingLink: toClientOnboardingLink(result.receiver.onboardingLink),
+      },
+    };
+  }
+  return result;
 }
 
 export async function approveReceiver(id: string) {
