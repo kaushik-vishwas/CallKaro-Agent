@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   UserPlus,
   Users,
-  ClipboardCheck,
   Share2,
   BarChart3,
   UserRound,
@@ -20,12 +19,6 @@ export const NAV_ITEMS: NavItem[] = [
   {id: 'dashboard', label: 'Dashboard', path: '/', icon: LayoutDashboard},
   {id: 'add-receiver', label: 'Add Receiver', path: '/add-receiver', icon: UserPlus},
   {id: 'receivers', label: 'Receivers', path: '/receivers', icon: Users},
-  {
-    id: 'pending-approvals',
-    label: 'Pending Approvals',
-    path: '/pending-approvals',
-    icon: ClipboardCheck,
-  },
   {
     id: 'share-credentials',
     label: 'Share Credentials',

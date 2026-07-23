@@ -141,7 +141,7 @@ export function ReceiversPage() {
                   navigate(`/receivers/${row.id}`);
                 }}
               >
-                View / Review
+                View Profile
               </button>
               <button
                 type="button"

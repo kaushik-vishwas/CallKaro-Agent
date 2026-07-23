@@ -68,12 +68,12 @@ export const QUICK_ACTIONS: QuickAction[] = [
     path: '/share-credentials',
   },
   {
-    id: 'review',
-    title: 'Review Profiles',
-    description: 'View pending approvals',
+    id: 'receivers',
+    title: 'View Receivers',
+    description: 'Manage your receiver list',
     variant: 'outline',
     icon: 'eye',
-    path: '/pending-approvals',
+    path: '/receivers',
   },
 ];
 

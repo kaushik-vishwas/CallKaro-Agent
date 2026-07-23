@@ -1,32 +1,14 @@
 import {useEffect, useState} from 'react';
-import {
-  Link,
-  Navigate,
-  useLocation,
-  useNavigate,
-  useParams,
-} from 'react-router-dom';
+import {Link, Navigate, useNavigate, useParams} from 'react-router-dom';
 import {
   ArrowLeft,
-  AlertCircle,
-  Ban,
   Check,
-  CircleCheck,
-  CircleMinus,
   Download,
-  OctagonX,
   Play,
   X,
 } from 'lucide-react';
-import {Badge, Button, Card, Modal, TextArea} from '../../components/ui';
-import {
-  approveReceiver,
-  fetchReceiver,
-  rejectReceiver,
-  requestReceiverChanges,
-  submitReceiverForReview,
-  terminateReceiver,
-} from '../../api/agent';
+import {Badge, Button, Card} from '../../components/ui';
+import {fetchReceiver, submitReceiverForReview} from '../../api/agent';
 import {ApiError} from '../../api/client';
 import {
   levelTone,
@@ -36,15 +18,9 @@ import {
 } from '../../data/mockReceivers';
 import styles from './ReviewReceiverPage.module.css';
 
-type ReviewMode = 'manage' | 'approval';
-
 export function ReviewReceiverPage() {
   const {id = ''} = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const mode: ReviewMode = location.pathname.startsWith('/pending-approvals')
-    ? 'approval'
-    : 'manage';
 
   const [profile, setProfile] = useState<ReceiverProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,9 +28,6 @@ export function ReviewReceiverPage() {
   const [actionError, setActionError] = useState('');
   const [busy, setBusy] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [rejectError, setRejectError] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
@@ -80,13 +53,6 @@ export function ReviewReceiverPage() {
     };
   }, [id]);
 
-  useEffect(() => {
-    if (!rejectOpen) {
-      setRejectReason('');
-      setRejectError('');
-    }
-  }, [rejectOpen]);
-
   if (loading) {
     return (
       <div className={styles.page}>
@@ -96,22 +62,7 @@ export function ReviewReceiverPage() {
   }
 
   if (notFound || !profile) {
-    return (
-      <Navigate
-        to={mode === 'approval' ? '/pending-approvals' : '/receivers'}
-        replace
-      />
-    );
-  }
-
-  const backTo = mode === 'approval' ? '/pending-approvals' : '/receivers';
-  const backLabel =
-    mode === 'approval' ? 'Back to Approvals' : 'Back to Receivers';
-  const displayStatus =
-    mode === 'approval' ? 'Pending Review' : profile.status;
-
-  function removePhoto(index: number) {
-    setPhotos(current => current.filter((_, i) => i !== index));
+    return <Navigate to="/receivers" replace />;
   }
 
   async function runAction(fn: () => Promise<void>) {
@@ -128,137 +79,43 @@ export function ReviewReceiverPage() {
     }
   }
 
-  async function confirmReject() {
-    if (!profile) return;
-    if (!rejectReason.trim()) {
-      setRejectError(
-        mode === 'approval'
-          ? 'Please enter a rejection reason.'
-          : 'Please enter a termination reason.',
-      );
-      return;
-    }
-    const receiverId = profile.id;
-    const reason = rejectReason.trim();
-    await runAction(async () => {
-      if (mode === 'approval') {
-        await rejectReceiver(receiverId, reason);
-        setRejectOpen(false);
-        navigate('/pending-approvals');
-      } else {
-        await terminateReceiver(receiverId, reason);
-        setRejectOpen(false);
-        navigate('/receivers');
-      }
-    });
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
         <div>
-          <Link to={backTo} className={styles.backLink}>
+          <Link to="/receivers" className={styles.backLink}>
             <ArrowLeft size={16} />
-            {backLabel}
+            Back to Receivers
           </Link>
-          <h1 className={styles.title}>Review Receiver Profile</h1>
+          <h1 className={styles.title}>Receiver Profile</h1>
           <p className={styles.subtitle}>
-            Verify all information before approving the receiver.
+            View receiver details. Approvals are handled by admin.
           </p>
         </div>
         <div className={styles.actions}>
-          {mode === 'approval' ? (
-            <>
-              <Button
-                variant="danger"
-                leftIcon={<CircleMinus size={16} />}
-                disabled={busy}
-                onClick={() => setRejectOpen(true)}
-              >
-                Reject
-              </Button>
-              <Button
-                variant="warning"
-                leftIcon={<AlertCircle size={16} />}
-                disabled={busy}
-                onClick={() =>
-                  void runAction(async () => {
-                    await requestReceiverChanges(profile.id);
-                    navigate('/pending-approvals');
-                  })
-                }
-              >
-                Request Changes
-              </Button>
-              <Button
-                variant="primary"
-                leftIcon={<CircleCheck size={16} />}
-                disabled={busy}
-                onClick={() =>
-                  void runAction(async () => {
-                    await approveReceiver(profile.id);
-                    navigate(`/pending-approvals/${profile.id}/approved`);
-                  })
-                }
-              >
-                Approve Receiver
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="danger"
-                leftIcon={<OctagonX size={16} />}
-                disabled={busy}
-                onClick={() => setRejectOpen(true)}
-              >
-                Terminate
-              </Button>
-              <Button
-                variant="dark"
-                leftIcon={<Ban size={16} />}
-                disabled={busy}
-                onClick={() =>
-                  window.alert(
-                    `Temporary block is not wired yet for ${profile.name}.`,
-                  )
-                }
-              >
-                Block 48 Hours
-              </Button>
-              {profile.status === 'Pending Review' ? (
-                <Button
-                  variant="primary"
-                  leftIcon={<Check size={16} />}
-                  disabled={busy}
-                  onClick={() =>
-                    void runAction(async () => {
-                      await approveReceiver(profile.id);
-                      navigate(`/pending-approvals/${profile.id}/approved`);
-                    })
-                  }
-                >
-                  Approve Receiver
-                </Button>
-              ) : profile.status === 'Inactive' ? (
-                <Button
-                  variant="primary"
-                  leftIcon={<Check size={16} />}
-                  disabled={busy}
-                  onClick={() =>
-                    void runAction(async () => {
-                      await submitReceiverForReview(profile.id);
-                      const refreshed = await fetchReceiver(profile.id);
-                      setProfile(refreshed.receiver);
-                      setPhotos(refreshed.receiver.photos ?? []);
-                    })
-                  }
-                >
-                  Submit for Review
-                </Button>
-              ) : null}
-            </>
-          )}
+          {profile.status === 'Inactive' ? (
+            <Button
+              variant="primary"
+              leftIcon={<Check size={16} />}
+              disabled={busy}
+              onClick={() =>
+                void runAction(async () => {
+                  await submitReceiverForReview(profile.id);
+                  const refreshed = await fetchReceiver(profile.id);
+                  setProfile(refreshed.receiver);
+                  setPhotos(refreshed.receiver.photos ?? []);
+                })
+              }
+            >
+              Submit for Review
+            </Button>
+          ) : null}
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/share-credentials/${profile.id}`)}
+          >
+            Share Credentials
+          </Button>
         </div>
       </div>
 
@@ -300,26 +157,21 @@ export function ReviewReceiverPage() {
             </h2>
             <div className={styles.photoGrid}>
               {photos.map((photo, index) => (
-                <div key={`${profile.id}-photo-${index}`} className={styles.photoWrap}>
+                <div
+                  key={`${profile.id}-photo-${index}`}
+                  className={styles.photoWrap}
+                >
                   <img
                     src={photo}
                     alt={`${profile.name} photo ${index + 1}`}
                     className={styles.photo}
                   />
-                  {mode === 'approval' ? (
-                    <button
-                      type="button"
-                      className={styles.photoRemove}
-                      aria-label={`Remove photo ${index + 1}`}
-                      onClick={() => removePhoto(index)}
-                    >
-                      <X size={12} strokeWidth={3} />
-                    </button>
-                  ) : null}
                 </div>
               ))}
               {!photos.length ? (
-                <p style={{color: '#6b7280', margin: 0}}>No photos uploaded yet.</p>
+                <p style={{color: '#6b7280', margin: 0}}>
+                  No photos uploaded yet.
+                </p>
               ) : null}
             </div>
           </Card>
@@ -352,11 +204,7 @@ export function ReviewReceiverPage() {
               </div>
               <div>
                 <dt>Account Number</dt>
-                <dd>
-                  {mode === 'approval' && profile.bank.accountNumber
-                    ? `****${profile.bank.accountNumber.slice(-4)}`
-                    : profile.bank.accountNumber || '—'}
-                </dd>
+                <dd>{profile.bank.accountNumber || '—'}</dd>
               </div>
               <div>
                 <dt>IFSC Code</dt>
@@ -385,10 +233,8 @@ export function ReviewReceiverPage() {
               <div>
                 <dt>Status</dt>
                 <dd>
-                  <Badge
-                    tone={statusTone(displayStatus as ReceiverStatus)}
-                  >
-                    {displayStatus}
+                  <Badge tone={statusTone(profile.status as ReceiverStatus)}>
+                    {profile.status}
                   </Badge>
                 </dd>
               </div>
@@ -418,7 +264,9 @@ export function ReviewReceiverPage() {
                   </Button>
                 </div>
               ) : (
-                <p className={styles.videoEmpty}>No verification video uploaded yet.</p>
+                <p className={styles.videoEmpty}>
+                  No verification video uploaded yet.
+                </p>
               )}
             </div>
 
@@ -440,7 +288,8 @@ export function ReviewReceiverPage() {
                     aria-label={`Open ${doc.title}`}
                     disabled={!doc.url}
                     onClick={() => {
-                      if (doc.url) window.open(doc.url, '_blank', 'noopener,noreferrer');
+                      if (doc.url)
+                        window.open(doc.url, '_blank', 'noopener,noreferrer');
                     }}
                   >
                     <Download size={16} />
@@ -483,52 +332,6 @@ export function ReviewReceiverPage() {
           </div>
         </div>
       ) : null}
-
-      <Modal
-        open={rejectOpen}
-        title={
-          mode === 'approval'
-            ? 'Reject Receiver Profile'
-            : 'Terminate Receiver Profile'
-        }
-        description={
-          mode === 'approval'
-            ? 'Please provide a reason for rejecting this profile. The receiver will be notified.'
-            : 'Please provide a reason for terminating this profile. The receiver will be notified.'
-        }
-        onClose={() => setRejectOpen(false)}
-        size="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setRejectOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="dangerSolid"
-              disabled={busy}
-              onClick={() => void confirmReject()}
-            >
-              {mode === 'approval' ? 'Reject Profile' : 'Terminate Profile'}
-            </Button>
-          </>
-        }
-      >
-        <TextArea
-          name="rejectReason"
-          placeholder={
-            mode === 'approval'
-              ? 'Enter rejection reason...'
-              : 'Enter termination reason...'
-          }
-          value={rejectReason}
-          onChange={event => {
-            setRejectReason(event.target.value);
-            if (rejectError) setRejectError('');
-          }}
-          error={rejectError}
-          rows={5}
-        />
-      </Modal>
     </div>
   );
 }

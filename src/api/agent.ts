@@ -1,7 +1,6 @@
 import {apiRequest} from './client';
 import {toClientOnboardingLink} from '../config/env';
 import type {
-  PendingApprovalRow,
   ReceiverCredentials,
   ReceiverListItem,
   ReceiverProfile,
@@ -104,12 +103,6 @@ export async function fetchReceiverStats() {
   return apiRequest<ReceiverStats>('/agent/receivers/stats');
 }
 
-export async function listPendingApprovals() {
-  return apiRequest<{pending: PendingApprovalRow[]}>(
-    '/agent/receivers/pending',
-  );
-}
-
 export async function fetchReceiver(id: string) {
   const result = await apiRequest<{
     receiver: ReceiverProfile & {onboardingLink?: string};
@@ -125,41 +118,6 @@ export async function fetchReceiver(id: string) {
     };
   }
   return result;
-}
-
-export async function approveReceiver(id: string) {
-  return apiRequest<{receiver: ReceiverProfile}>(
-    `/agent/receivers/${id}/approve`,
-    {method: 'POST'},
-  );
-}
-
-export async function rejectReceiver(id: string, reason: string) {
-  return apiRequest<{receiver: ReceiverProfile}>(
-    `/agent/receivers/${id}/reject`,
-    {method: 'POST', body: JSON.stringify({reason})},
-  );
-}
-
-export async function requestReceiverChanges(id: string, note?: string) {
-  return apiRequest<{receiver: ReceiverProfile}>(
-    `/agent/receivers/${id}/request-changes`,
-    {method: 'POST', body: JSON.stringify({note})},
-  );
-}
-
-export async function terminateReceiver(id: string, reason?: string) {
-  return apiRequest<{receiver: ReceiverProfile}>(
-    `/agent/receivers/${id}/terminate`,
-    {method: 'POST', body: JSON.stringify({reason})},
-  );
-}
-
-export async function activateReceiver(id: string) {
-  return apiRequest<{receiver: ReceiverProfile}>(
-    `/agent/receivers/${id}/activate`,
-    {method: 'POST'},
-  );
 }
 
 export async function listCredentialReceivers() {

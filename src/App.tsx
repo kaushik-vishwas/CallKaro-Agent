@@ -5,8 +5,6 @@ import {DashboardPage} from './pages/Dashboard/DashboardPage';
 import {AddReceiverPage} from './pages/AddReceiver/AddReceiverPage';
 import {ReceiversPage} from './pages/Receivers/ReceiversPage';
 import {ReviewReceiverPage} from './pages/Receivers/ReviewReceiverPage';
-import {PendingApprovalsPage} from './pages/PendingApprovals/PendingApprovalsPage';
-import {ApprovalSuccessPage} from './pages/PendingApprovals/ApprovalSuccessPage';
 import {ShareCredentialsPage} from './pages/ShareCredentials/ShareCredentialsPage';
 import {ShareCredentialDetailPage} from './pages/ShareCredentials/ShareCredentialDetailPage';
 import {AnalyticsPage} from './pages/Analytics/AnalyticsPage';
@@ -50,15 +48,6 @@ export default function App() {
             <Route path="/add-receiver" element={<AddReceiverPage />} />
             <Route path="/receivers" element={<ReceiversPage />} />
             <Route path="/receivers/:id" element={<ReviewReceiverPage />} />
-            <Route path="/pending-approvals" element={<PendingApprovalsPage />} />
-            <Route
-              path="/pending-approvals/:id/approved"
-              element={<ApprovalSuccessPage />}
-            />
-            <Route
-              path="/pending-approvals/:id"
-              element={<ReviewReceiverPage />}
-            />
             <Route path="/share-credentials" element={<ShareCredentialsPage />} />
             <Route
               path="/share-credentials/:id"
