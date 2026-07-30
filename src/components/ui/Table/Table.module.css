@@ -36,7 +36,7 @@
 }
 
 .empty {
-  padding: var(--space-8);
+  padding: 0;
   text-align: center;
   color: var(--color-text-muted);
 }

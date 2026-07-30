@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import {EmptyTableState} from '../EmptyTableState/EmptyTableState';
 import styles from './Table.module.css';
 
 export type TableColumn<T> = {
@@ -13,6 +14,7 @@ type TableProps<T> = {
   rows: T[];
   rowKey: (row: T) => string;
   emptyMessage?: string;
+  showEmptyIllustration?: boolean;
 };
 
 export function Table<T>({
@@ -20,8 +22,16 @@ export function Table<T>({
   rows,
   rowKey,
   emptyMessage = 'No data available',
+  showEmptyIllustration = false,
 }: TableProps<T>) {
   if (rows.length === 0) {
+    if (showEmptyIllustration) {
+      return (
+        <div className={styles.empty}>
+          <EmptyTableState label={emptyMessage} />
+        </div>
+      );
+    }
     return <div className={styles.empty}>{emptyMessage}</div>;
   }
 

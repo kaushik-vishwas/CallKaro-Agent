@@ -1,0 +1,21 @@
+.wrap {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 48px 16px 56px;
+}
+
+.illustration {
+  display: block;
+  width: 160px;
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+}
+
+.label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}

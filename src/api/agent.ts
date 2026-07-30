@@ -99,6 +99,17 @@ export async function listReceivers(params?: {
   );
 }
 
+export async function listPendingApprovals() {
+  return apiRequest<{
+    pending: Array<{
+      id: string;
+      name: string;
+      photoCount: number;
+      submittedAgo: string;
+    }>;
+  }>('/agent/receivers/pending');
+}
+
 export async function fetchReceiverStats() {
   return apiRequest<ReceiverStats>('/agent/receivers/stats');
 }

@@ -221,6 +221,7 @@ export function ReceiversPage() {
           columns={columns}
           rows={filteredRows}
           rowKey={row => row.id}
+          showEmptyIllustration={!loading}
           emptyMessage={
             loading ? 'Loading receivers…' : 'No receivers match your filters.'
           }
