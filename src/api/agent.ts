@@ -114,6 +114,30 @@ export async function fetchReceiverStats() {
   return apiRequest<ReceiverStats>('/agent/receivers/stats');
 }
 
+export type AgentAnalytics = {
+  stats: Array<{id: string; label: string; value: string}>;
+  monthlyTrend: Array<{month: string; value: number}>;
+  topPerformers: ReceiverListItem[];
+};
+
+export async function fetchAgentAnalytics() {
+  return apiRequest<{analytics: AgentAnalytics}>('/agent/analytics');
+}
+
+export async function uploadAgentPhoto(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiRequest<{
+    url: string;
+    key: string;
+    size: number;
+    storageUrl?: string;
+  }>('/uploads/photo', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 export async function fetchReceiver(id: string) {
   const result = await apiRequest<{
     receiver: ReceiverProfile & {onboardingLink?: string};

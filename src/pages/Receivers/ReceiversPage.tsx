@@ -8,6 +8,7 @@ import {
 } from '../../api/agent';
 import {ApiError} from '../../api/client';
 import {
+  formatHours,
   formatInr,
   levelTone,
   statusTone,
@@ -105,7 +106,9 @@ export function ReceiversPage() {
     {
       key: 'hours',
       header: 'Total Hours',
-      render: row => <span className={styles.metric}>{row.totalHours}</span>,
+      render: row => (
+        <span className={styles.metric}>{formatHours(row.totalHours)}</span>
+      ),
     },
     {
       key: 'earnings',

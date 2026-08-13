@@ -4,15 +4,14 @@ import {Lock, LogOut, Shield, UserRound} from 'lucide-react';
 import {PageHeader} from '../../components/layout/PageHeader/PageHeader';
 import {Button, Card, Input} from '../../components/ui';
 import {
+  fetchAgentMe,
   updateAgentPassword,
   updateAgentProfile,
+  uploadAgentPhoto,
 } from '../../api/agent';
 import {ApiError} from '../../api/client';
 import {useAuth} from '../../auth/AuthContext';
 import styles from './ProfilePage.module.css';
-
-const DEFAULT_AVATAR =
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=320&h=320&fit=crop';
 
 type ProfileForm = {
   fullName: string;
@@ -28,10 +27,10 @@ type PasswordForm = {
 };
 
 export function ProfilePage() {
-  const {agent, logout, setAgent} = useAuth();
+  const {agent, logout, setAgent, refresh} = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [avatarUrl, setAvatarUrl] = useState(DEFAULT_AVATAR);
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [profile, setProfile] = useState<ProfileForm>({
     fullName: '',
     email: '',
@@ -45,6 +44,39 @@ export function ProfilePage() {
   });
   const [passwordError, setPasswordError] = useState('');
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    void fetchAgentMe()
+      .then(data => {
+        if (cancelled) return;
+        setAgent(data.agent);
+        setProfile({
+          fullName: data.agent.name || '',
+          email: data.agent.email || '',
+          phone: data.agent.phone || '',
+          agentCode: data.agent.agentCode || '',
+        });
+        setAvatarUrl(data.agent.avatarUrl || '');
+      })
+      .catch(err => {
+        if (cancelled) return;
+        setError(
+          err instanceof ApiError ? err.message : 'Failed to load profile.',
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [setAgent]);
 
   useEffect(() => {
     if (!agent) return;
@@ -54,24 +86,29 @@ export function ProfilePage() {
       phone: agent.phone || '',
       agentCode: agent.agentCode,
     });
-    setAvatarUrl(agent.avatarUrl || DEFAULT_AVATAR);
+    if (agent.avatarUrl) setAvatarUrl(agent.avatarUrl);
   }, [agent]);
 
   async function onUpdateProfile(event: FormEvent) {
     event.preventDefault();
     setMessage('');
+    setError('');
+    setBusy(true);
     try {
       const data = await updateAgentProfile({
         name: profile.fullName,
         phone: profile.phone,
-        avatarUrl,
+        avatarUrl: avatarUrl || undefined,
       });
       setAgent(data.agent);
       setMessage('Profile updated.');
+      await refresh();
     } catch (err) {
-      setMessage(
+      setError(
         err instanceof ApiError ? err.message : 'Failed to update profile.',
       );
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -90,6 +127,9 @@ export function ProfilePage() {
       return;
     }
     setPasswordError('');
+    setMessage('');
+    setError('');
+    setBusy(true);
     try {
       await updateAgentPassword(
         passwords.currentPassword,
@@ -105,14 +145,33 @@ export function ProfilePage() {
       setPasswordError(
         err instanceof ApiError ? err.message : 'Failed to update password.',
       );
+    } finally {
+      setBusy(false);
     }
   }
 
-  function onPhotoSelected(file: File | null) {
+  async function onPhotoSelected(file: File | null) {
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setAvatarUrl(url);
-    setMessage('Photo preview updated — click Update on profile to save URL.');
+    setPhotoBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const uploaded = await uploadAgentPhoto(file);
+      const nextUrl =
+        uploaded.storageUrl || uploaded.key || uploaded.url;
+      const previewUrl = uploaded.url || nextUrl;
+      setAvatarUrl(previewUrl);
+      const data = await updateAgentProfile({avatarUrl: nextUrl});
+      setAgent(data.agent);
+      if (data.agent.avatarUrl) setAvatarUrl(data.agent.avatarUrl);
+      setMessage('Profile photo updated.');
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Failed to upload photo.',
+      );
+    } finally {
+      setPhotoBusy(false);
+    }
   }
 
   function onLogout() {
@@ -120,15 +179,21 @@ export function ProfilePage() {
     navigate('/login', {replace: true});
   }
 
+  const initial = (profile.fullName || 'A').charAt(0).toUpperCase();
+
   return (
     <div className={styles.page}>
       <PageHeader
-        title="Settings"
+        title="Profile"
         subtitle="Manage your account preferences"
       />
 
+      {loading ? <p>Loading profile…</p> : null}
       {message ? (
         <p style={{marginBottom: 16, color: '#059669'}}>{message}</p>
+      ) : null}
+      {error ? (
+        <p style={{marginBottom: 16, color: '#dc2626'}}>{error}</p>
       ) : null}
 
       <div className={styles.topGrid}>
@@ -145,6 +210,7 @@ export function ProfilePage() {
               onChange={event =>
                 setProfile(prev => ({...prev, fullName: event.target.value}))
               }
+              required
             />
             <Input
               name="email"
@@ -171,15 +237,21 @@ export function ProfilePage() {
                 rightAdornment={<Lock size={15} />}
               />
             </div>
-            <Button type="submit" variant="primary">
-              Update
+            <Button type="submit" variant="primary" disabled={busy || loading}>
+              {busy ? 'Saving…' : 'Update'}
             </Button>
           </form>
         </Card>
 
         <Card className={styles.photoCard} padding="lg">
           <div className={styles.photoWrap}>
-            <img src={avatarUrl} alt="Profile" className={styles.avatar} />
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" className={styles.avatar} />
+            ) : (
+              <div className={styles.avatar} aria-hidden>
+                {initial}
+              </div>
+            )}
           </div>
           <p className={styles.photoHint}>Update Profile Picture</p>
           <input
@@ -188,14 +260,15 @@ export function ProfilePage() {
             accept="image/*"
             className={styles.hiddenFile}
             onChange={event =>
-              onPhotoSelected(event.target.files?.[0] ?? null)
+              void onPhotoSelected(event.target.files?.[0] ?? null)
             }
           />
           <Button
             variant="primary"
+            disabled={photoBusy}
             onClick={() => fileInputRef.current?.click()}
           >
-            Update Photo
+            {photoBusy ? 'Uploading…' : 'Update Photo'}
           </Button>
         </Card>
       </div>
@@ -249,7 +322,13 @@ export function ProfilePage() {
             autoComplete="new-password"
             error={passwordError}
           />
-          <Button type="submit" variant="primary" fullWidth size="lg">
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            size="lg"
+            disabled={busy}
+          >
             Update Password
           </Button>
         </form>

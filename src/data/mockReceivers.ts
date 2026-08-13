@@ -55,6 +55,13 @@ export function formatInr(amount: number): string {
   return `₹${amount.toLocaleString('en-IN')}`;
 }
 
+export function formatHours(hours: number): string {
+  return Number(hours || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
 const PHOTO_PLACEHOLDERS = [
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
   'https://images.unsplash.com/photo-1529626455594-64432c78bfcd?w=200&h=200&fit=crop',

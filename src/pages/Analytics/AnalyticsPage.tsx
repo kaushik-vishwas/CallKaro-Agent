@@ -1,14 +1,20 @@
-import {useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {MoreVertical} from 'lucide-react';
+import {
+  Activity,
+  Clock3,
+  MoreVertical,
+  Phone,
+  ShieldCheck,
+  TimerReset,
+  Users,
+} from 'lucide-react';
 import {PageHeader} from '../../components/layout/PageHeader/PageHeader';
 import {Avatar, Badge, Card, Table, type TableColumn} from '../../components/ui';
+import {fetchAgentAnalytics} from '../../api/agent';
+import {ApiError} from '../../api/client';
 import {
-  ANALYTICS_STATS,
-  MONTHLY_TREND,
-  TOP_PERFORMERS,
-} from '../../data/mockAnalytics';
-import {
+  formatHours,
   formatInr,
   levelTone,
   statusTone,
@@ -16,10 +22,53 @@ import {
 } from '../../data/mockReceivers';
 import styles from './AnalyticsPage.module.css';
 
+const STAT_ICONS: Record<string, typeof Users> = {
+  total: Users,
+  pending: Clock3,
+  approved: ShieldCheck,
+  active: Activity,
+  calls: Phone,
+  hours: TimerReset,
+};
+
 export function AnalyticsPage() {
   const navigate = useNavigate();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const maxTrend = Math.max(...MONTHLY_TREND.map(item => item.value));
+  const [stats, setStats] = useState<
+    Array<{id: string; label: string; value: string}>
+  >([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<
+    Array<{month: string; value: number}>
+  >([]);
+  const [topPerformers, setTopPerformers] = useState<ReceiverListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await fetchAgentAnalytics();
+      setStats(result.analytics.stats || []);
+      setMonthlyTrend(result.analytics.monthlyTrend || []);
+      setTopPerformers(result.analytics.topPerformers || []);
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Failed to load analytics.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const maxTrend = useMemo(
+    () => Math.max(...monthlyTrend.map(item => item.value), 1),
+    [monthlyTrend],
+  );
 
   const columns: TableColumn<ReceiverListItem>[] = [
     {
@@ -54,7 +103,9 @@ export function AnalyticsPage() {
     {
       key: 'hours',
       header: 'Total Hours',
-      render: row => <span className={styles.metric}>{row.totalHours}</span>,
+      render: row => (
+        <span className={styles.metric}>{formatHours(row.totalHours)}</span>
+      ),
     },
     {
       key: 'earnings',
@@ -112,13 +163,18 @@ export function AnalyticsPage() {
   return (
     <div className={styles.page} onClick={() => setMenuOpenId(null)}>
       <PageHeader
-        title="Agent Dashboard"
-        subtitle="Manage receiver onboarding and approvals"
+        title="Analytics"
+        subtitle="Live performance of your receiver team"
       />
 
+      {loading ? <p>Loading analytics…</p> : null}
+      {error ? (
+        <p style={{color: '#dc2626', marginBottom: 16}}>{error}</p>
+      ) : null}
+
       <section className={styles.stats} aria-label="Analytics metrics">
-        {ANALYTICS_STATS.map(stat => {
-          const Icon = stat.icon;
+        {stats.map(stat => {
+          const Icon = STAT_ICONS[stat.id] || Users;
           return (
             <Card key={stat.id} className={styles.statCard} padding="md">
               <span className={styles.statIcon} aria-hidden>
@@ -135,12 +191,22 @@ export function AnalyticsPage() {
 
       <Card className={styles.chartCard} padding="lg">
         <h2 className={styles.sectionTitle}>Monthly Trend</h2>
-        <div className={styles.chart} role="img" aria-label="Monthly trend bar chart">
-          {MONTHLY_TREND.map((item, index) => {
-            const height = Math.max(12, Math.round((item.value / maxTrend) * 100));
+        <div
+          className={styles.chart}
+          role="img"
+          aria-label="Monthly trend bar chart"
+        >
+          {monthlyTrend.length === 0 && !loading ? (
+            <p style={{color: '#6b7280'}}>No trend data yet.</p>
+          ) : null}
+          {monthlyTrend.map((item, index) => {
+            const height = Math.max(
+              12,
+              Math.round((item.value / maxTrend) * 100),
+            );
             const emphasis = [3, 6, 9, 11].includes(index);
             return (
-              <div key={item.month} className={styles.barGroup}>
+              <div key={`${item.month}-${index}`} className={styles.barGroup}>
                 <div className={styles.barTrack}>
                   <div
                     className={[
@@ -163,7 +229,7 @@ export function AnalyticsPage() {
         <Card className={styles.tableCard} padding="none">
           <Table
             columns={columns}
-            rows={TOP_PERFORMERS}
+            rows={topPerformers}
             rowKey={row => row.id}
             emptyMessage="No performers yet."
           />
