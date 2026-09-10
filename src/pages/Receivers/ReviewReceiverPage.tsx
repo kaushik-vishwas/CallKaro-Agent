@@ -1,14 +1,14 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Link, Navigate, useNavigate, useParams} from 'react-router-dom';
+import {ArrowLeft, Check, Download, Play, Plus, X} from 'lucide-react';
+import {Badge, Button, Card, Input, TextArea} from '../../components/ui';
 import {
-  ArrowLeft,
-  Check,
-  Download,
-  Play,
-  X,
-} from 'lucide-react';
-import {Badge, Button, Card} from '../../components/ui';
-import {fetchReceiver, submitReceiverForReview} from '../../api/agent';
+  fetchReceiver,
+  submitReceiverForReview,
+  updateReceiverProxyProfile,
+  uploadAgentPhoto,
+  uploadAgentVideo,
+} from '../../api/agent';
 import {ApiError} from '../../api/client';
 import {
   levelTone,
@@ -18,17 +18,66 @@ import {
 } from '../../data/mockReceivers';
 import styles from './ReviewReceiverPage.module.css';
 
+type ProxyDraft = {
+  enabled: boolean;
+  name: string;
+  bio: string;
+  photos: string[];
+  /** Storage keys/URLs persisted to API */
+  photoKeys: string[];
+  videoUrl: string;
+  videoKey: string;
+  videoThumb: string;
+  videoThumbKey: string;
+};
+
+function emptyProxyDraft(): ProxyDraft {
+  return {
+    enabled: false,
+    name: '',
+    bio: '',
+    photos: [],
+    photoKeys: [],
+    videoUrl: '',
+    videoKey: '',
+    videoThumb: '',
+    videoThumbKey: '',
+  };
+}
+
+function draftFromProfile(profile: ReceiverProfile): ProxyDraft {
+  const proxy = profile.proxyProfile;
+  const photos = proxy?.photos ?? [];
+  return {
+    enabled: Boolean(proxy?.enabled),
+    name: proxy?.name || '',
+    bio: proxy?.bio || '',
+    photos,
+    photoKeys: [...photos],
+    videoUrl: proxy?.videoUrl || '',
+    videoKey: proxy?.videoUrl || '',
+    videoThumb: proxy?.videoThumb || '',
+    videoThumbKey: proxy?.videoThumb || '',
+  };
+}
+
 export function ReviewReceiverPage() {
   const {id = ''} = useParams();
   const navigate = useNavigate();
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const [profile, setProfile] = useState<ReceiverProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [proxyMessage, setProxyMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [proxyBusy, setProxyBusy] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
+  const [proxyVideoOpen, setProxyVideoOpen] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [proxyDraft, setProxyDraft] = useState<ProxyDraft>(emptyProxyDraft());
 
   useEffect(() => {
     let cancelled = false;
@@ -36,11 +85,13 @@ export function ReviewReceiverPage() {
       setLoading(true);
       setNotFound(false);
       setActionError('');
+      setProxyMessage('');
       try {
         const data = await fetchReceiver(id);
         if (cancelled) return;
         setProfile(data.receiver);
         setPhotos(data.receiver.photos ?? []);
+        setProxyDraft(draftFromProfile(data.receiver));
       } catch {
         if (!cancelled) setNotFound(true);
       } finally {
@@ -79,6 +130,87 @@ export function ReviewReceiverPage() {
     }
   }
 
+  async function onProxyPhotoSelected(file: File | null) {
+    if (!file || proxyDraft.photos.length >= 5) return;
+    setProxyBusy(true);
+    setActionError('');
+    setProxyMessage('');
+    try {
+      const uploaded = await uploadAgentPhoto(file);
+      const storageKey = uploaded.storageUrl || uploaded.key || uploaded.url;
+      const previewUrl = uploaded.url || storageKey;
+      setProxyDraft(prev => ({
+        ...prev,
+        photos: [...prev.photos, previewUrl].slice(0, 5),
+        photoKeys: [...prev.photoKeys, storageKey].slice(0, 5),
+      }));
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError ? err.message : 'Failed to upload photo.',
+      );
+    } finally {
+      setProxyBusy(false);
+    }
+  }
+
+  async function onProxyVideoSelected(file: File | null) {
+    if (!file) return;
+    setProxyBusy(true);
+    setActionError('');
+    setProxyMessage('');
+    try {
+      const uploaded = await uploadAgentVideo(file);
+      const storageKey = uploaded.storageUrl || uploaded.key || uploaded.url;
+      const previewUrl = uploaded.url || storageKey;
+      setProxyDraft(prev => ({
+        ...prev,
+        videoUrl: previewUrl,
+        videoKey: storageKey,
+        videoThumb: prev.photos[0] || prev.videoThumb,
+        videoThumbKey: prev.photoKeys[0] || prev.videoThumbKey,
+      }));
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError ? err.message : 'Failed to upload video.',
+      );
+    } finally {
+      setProxyBusy(false);
+    }
+  }
+
+  async function saveProxyProfile() {
+    if (!profile) return;
+    setProxyBusy(true);
+    setActionError('');
+    setProxyMessage('');
+    try {
+      const result = await updateReceiverProxyProfile(profile.id, {
+        enabled: proxyDraft.enabled,
+        name: proxyDraft.name.trim(),
+        bio: proxyDraft.bio.trim(),
+        photos: proxyDraft.photoKeys,
+        videoUrl: proxyDraft.videoKey || '',
+        videoThumb: proxyDraft.videoThumbKey || proxyDraft.photoKeys[0] || '',
+      });
+      setProfile(result.receiver);
+      setPhotos(result.receiver.photos ?? []);
+      setProxyDraft(draftFromProfile(result.receiver));
+      setProxyMessage(
+        result.receiver.proxyProfile?.enabled
+          ? 'Proxy profile saved. Callers will see this identity.'
+          : 'Proxy profile saved (disabled for callers).',
+      );
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : 'Failed to save proxy profile.',
+      );
+    } finally {
+      setProxyBusy(false);
+    }
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
@@ -104,6 +236,7 @@ export function ReviewReceiverPage() {
                   const refreshed = await fetchReceiver(profile.id);
                   setProfile(refreshed.receiver);
                   setPhotos(refreshed.receiver.photos ?? []);
+                  setProxyDraft(draftFromProfile(refreshed.receiver));
                 })
               }
             >
@@ -121,6 +254,9 @@ export function ReviewReceiverPage() {
 
       {actionError ? (
         <p style={{color: '#dc2626', marginBottom: 16}}>{actionError}</p>
+      ) : null}
+      {proxyMessage ? (
+        <p style={{color: '#059669', marginBottom: 16}}>{proxyMessage}</p>
       ) : null}
 
       <div className={styles.layout}>
@@ -173,6 +309,201 @@ export function ReviewReceiverPage() {
                   No photos uploaded yet.
                 </p>
               ) : null}
+            </div>
+          </Card>
+
+          <Card className={styles.section} padding="lg">
+            <div className={styles.proxyHeader}>
+              <div>
+                <h2 className={styles.sectionTitle} style={{marginBottom: 6}}>
+                  Caller proxy profile
+                </h2>
+                <p className={styles.proxyHint}>
+                  Fake / public identity shown only on the caller app. Receiver
+                  app keeps the real name and photos unchanged.
+                </p>
+              </div>
+              <label className={styles.toggleRow}>
+                <input
+                  type="checkbox"
+                  checked={proxyDraft.enabled}
+                  disabled={proxyBusy}
+                  onChange={event =>
+                    setProxyDraft(prev => ({
+                      ...prev,
+                      enabled: event.target.checked,
+                    }))
+                  }
+                />
+                <span>Show proxy to callers</span>
+              </label>
+            </div>
+
+            <div className={styles.proxyForm}>
+              <Input
+                label="Proxy display name"
+                placeholder="Name callers will see"
+                value={proxyDraft.name}
+                disabled={proxyBusy}
+                onChange={event =>
+                  setProxyDraft(prev => ({
+                    ...prev,
+                    name: event.target.value,
+                  }))
+                }
+              />
+
+              <TextArea
+                label="Proxy bio"
+                placeholder="Short bio callers will see"
+                value={proxyDraft.bio}
+                disabled={proxyBusy}
+                rows={4}
+                maxLength={250}
+                hint={`${proxyDraft.bio.length}/250`}
+                onChange={event =>
+                  setProxyDraft(prev => ({
+                    ...prev,
+                    bio: event.target.value.slice(0, 250),
+                  }))
+                }
+              />
+
+              <div>
+                <p className={styles.fieldLabel}>
+                  Proxy photos ({proxyDraft.photos.length}/5)
+                </p>
+                <div className={styles.photoGrid}>
+                  {proxyDraft.photos.map((photo, index) => (
+                    <div
+                      key={`proxy-photo-${index}`}
+                      className={styles.photoWrap}
+                    >
+                      <img
+                        src={photo}
+                        alt={`Proxy photo ${index + 1}`}
+                        className={styles.photo}
+                      />
+                      <button
+                        type="button"
+                        className={styles.photoRemove}
+                        aria-label="Remove photo"
+                        disabled={proxyBusy}
+                        onClick={() =>
+                          setProxyDraft(prev => ({
+                            ...prev,
+                            photos: prev.photos.filter((_, i) => i !== index),
+                            photoKeys: prev.photoKeys.filter(
+                              (_, i) => i !== index,
+                            ),
+                          }))
+                        }
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  {proxyDraft.photos.length < 5 ? (
+                    <button
+                      type="button"
+                      className={styles.photoAdd}
+                      disabled={proxyBusy}
+                      onClick={() => photoInputRef.current?.click()}
+                    >
+                      <Plus size={18} />
+                      Add
+                    </button>
+                  ) : null}
+                </div>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={event => {
+                    const file = event.target.files?.[0] || null;
+                    event.target.value = '';
+                    void onProxyPhotoSelected(file);
+                  }}
+                />
+              </div>
+
+              <div>
+                <p className={styles.fieldLabel}>Proxy intro video (optional)</p>
+                {proxyDraft.videoUrl ? (
+                  <div className={styles.videoCard}>
+                    <div
+                      className={styles.videoThumb}
+                      style={{
+                        backgroundImage: proxyDraft.videoThumb
+                          ? `url(${proxyDraft.videoThumb})`
+                          : proxyDraft.photos[0]
+                            ? `url(${proxyDraft.photos[0]})`
+                            : undefined,
+                      }}
+                    >
+                      <Button
+                        variant="primary"
+                        leftIcon={<Play size={16} />}
+                        onClick={() => setProxyVideoOpen(true)}
+                      >
+                        Preview
+                      </Button>
+                    </div>
+                    <div className={styles.proxyVideoActions}>
+                      <Button
+                        variant="outline"
+                        disabled={proxyBusy}
+                        onClick={() => videoInputRef.current?.click()}
+                      >
+                        Replace video
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={proxyBusy}
+                        onClick={() =>
+                          setProxyDraft(prev => ({
+                            ...prev,
+                            videoUrl: '',
+                            videoKey: '',
+                            videoThumb: '',
+                            videoThumbKey: '',
+                          }))
+                        }
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    disabled={proxyBusy}
+                    onClick={() => videoInputRef.current?.click()}
+                  >
+                    Upload video
+                  </Button>
+                )}
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  hidden
+                  onChange={event => {
+                    const file = event.target.files?.[0] || null;
+                    event.target.value = '';
+                    void onProxyVideoSelected(file);
+                  }}
+                />
+              </div>
+
+              <Button
+                variant="primary"
+                disabled={proxyBusy}
+                onClick={() => void saveProxyProfile()}
+              >
+                {proxyBusy ? 'Saving…' : 'Save proxy profile'}
+              </Button>
             </div>
           </Card>
 
@@ -236,6 +567,14 @@ export function ReviewReceiverPage() {
                   <Badge tone={statusTone(profile.status as ReceiverStatus)}>
                     {profile.status}
                   </Badge>
+                </dd>
+              </div>
+              <div>
+                <dt>Caller identity</dt>
+                <dd>
+                  {proxyDraft.enabled && proxyDraft.name.trim()
+                    ? `Proxy · ${proxyDraft.name.trim()}`
+                    : 'Real profile'}
                 </dd>
               </div>
             </dl>
@@ -325,6 +664,38 @@ export function ReviewReceiverPage() {
             <video
               className={styles.videoPlayer}
               src={profile.kyc.videoUrl}
+              controls
+              autoPlay
+              playsInline
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {proxyVideoOpen && proxyDraft.videoUrl ? (
+        <div
+          className={styles.videoOverlay}
+          role="presentation"
+          onClick={() => setProxyVideoOpen(false)}
+        >
+          <div
+            className={styles.videoModal}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Proxy video player"
+            onClick={event => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.videoClose}
+              aria-label="Close video"
+              onClick={() => setProxyVideoOpen(false)}
+            >
+              <X size={18} />
+            </button>
+            <video
+              className={styles.videoPlayer}
+              src={proxyDraft.videoUrl}
               controls
               autoPlay
               playsInline

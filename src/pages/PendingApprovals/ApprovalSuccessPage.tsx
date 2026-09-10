@@ -27,9 +27,9 @@ const NEXT_STEPS = [
 ];
 
 function rateForLevel(level: number): string {
-  if (level >= 3) return '₹20/min';
-  if (level === 2) return '₹15/min';
-  return '₹10/min';
+  if (level >= 3) return '1600 coins/min';
+  if (level === 2) return '1800 coins/min';
+  return '2000 coins/min';
 }
 
 export function ApprovalSuccessPage() {

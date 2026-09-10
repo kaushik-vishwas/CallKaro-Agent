@@ -47,9 +47,9 @@ const GENDER_OPTIONS = [
 ];
 
 const LEVEL_OPTIONS = [
-  {value: '1', title: 'Level 1', subtitle: '₹10/min'},
-  {value: '2', title: 'Level 2', subtitle: '₹15/min'},
-  {value: '3', title: 'Level 3', subtitle: '₹20/min'},
+  {value: '1', title: 'Level 1', subtitle: '2000 coins/min'},
+  {value: '2', title: 'Level 2', subtitle: '1800 coins/min'},
+  {value: '3', title: 'Level 3', subtitle: '1600 coins/min'},
 ];
 
 const NEXT_STEPS = [

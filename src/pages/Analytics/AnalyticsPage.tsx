@@ -72,6 +72,14 @@ export function AnalyticsPage() {
 
   const columns: TableColumn<ReceiverListItem>[] = [
     {
+      key: 'rank',
+      header: 'Rank',
+      width: '72px',
+      render: row => (
+        <span className={styles.rank}>#{row.rank ?? '—'}</span>
+      ),
+    },
+    {
       key: 'receiver',
       header: 'Receiver',
       render: row => (

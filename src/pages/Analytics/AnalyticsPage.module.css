@@ -147,6 +147,14 @@
   color: var(--color-text);
 }
 
+.rank {
+  display: inline-flex;
+  min-width: 36px;
+  font-weight: 800;
+  font-size: 14px;
+  color: #7c3aed;
+}
+
 .actionsWrap {
   position: relative;
   display: inline-flex;

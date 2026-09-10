@@ -138,6 +138,20 @@ export async function uploadAgentPhoto(file: File) {
   });
 }
 
+export async function uploadAgentVideo(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiRequest<{
+    url: string;
+    key: string;
+    size: number;
+    storageUrl?: string;
+  }>('/uploads/video', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 export async function fetchReceiver(id: string) {
   const result = await apiRequest<{
     receiver: ReceiverProfile & {onboardingLink?: string};
@@ -171,5 +185,22 @@ export async function submitReceiverForReview(id: string) {
   return apiRequest<{receiver: ReceiverProfile}>(
     `/agent/receivers/${id}/submit-for-review`,
     {method: 'POST', body: JSON.stringify({})},
+  );
+}
+
+export async function updateReceiverProxyProfile(
+  id: string,
+  payload: {
+    enabled: boolean;
+    name: string;
+    bio?: string;
+    photos: string[];
+    videoUrl?: string;
+    videoThumb?: string;
+  },
+) {
+  return apiRequest<{receiver: ReceiverProfile}>(
+    `/agent/receivers/${id}/proxy-profile`,
+    {method: 'PATCH', body: JSON.stringify(payload)},
   );
 }

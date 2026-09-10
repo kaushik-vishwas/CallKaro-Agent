@@ -9,6 +9,8 @@ export type ReceiverListItem = {
   status: ReceiverStatus;
   totalHours: number;
   earnings: number;
+  rank?: number | null;
+  isSpecial?: boolean;
 };
 
 export type KycDocument = {
@@ -36,6 +38,15 @@ export type ReceiverProfile = ReceiverListItem & {
     videoUrl?: string;
     videoThumb: string;
     documents: KycDocument[];
+  };
+  /** Caller-facing privacy alias (agent-managed). */
+  proxyProfile?: {
+    enabled: boolean;
+    name: string;
+    bio?: string;
+    photos: string[];
+    videoUrl?: string;
+    videoThumb?: string;
   };
 };
 

@@ -73,6 +73,14 @@ export function ReceiversPage() {
 
   const columns: TableColumn<ReceiverListItem>[] = [
     {
+      key: 'rank',
+      header: 'Rank',
+      width: '72px',
+      render: row => (
+        <span className={styles.rank}>#{row.rank ?? '—'}</span>
+      ),
+    },
+    {
       key: 'receiver',
       header: 'Receiver',
       render: row => (
@@ -93,7 +101,9 @@ export function ReceiversPage() {
       key: 'level',
       header: 'Level',
       render: row => (
-        <Badge tone={levelTone(row.level)}>Level {row.level}</Badge>
+        <span className={styles.levelCell}>
+          <Badge tone={levelTone(row.level)}>Level {row.level}</Badge>
+        </span>
       ),
     },
     {
