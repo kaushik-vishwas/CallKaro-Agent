@@ -2,11 +2,21 @@ import type {BadgeTone} from '../components/ui';
 
 export type ReceiverStatus = 'Active' | 'Inactive' | 'Pending Review';
 
+/** Admin display stage, sent by the backend (same as the admin panel). */
+export type ReceiverStage =
+  | 'draft'
+  | 'pending'
+  | 'active'
+  | 'suspended'
+  | 'blocked'
+  | 'rejected';
+
 export type ReceiverListItem = {
   id: string;
   name: string;
   level: number;
   status: ReceiverStatus;
+  stage?: ReceiverStage | null;
   totalHours: number;
   earnings: number;
   rank?: number | null;

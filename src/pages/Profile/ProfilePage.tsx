@@ -5,7 +5,6 @@ import {PageHeader} from '../../components/layout/PageHeader/PageHeader';
 import {Button, Card, Input} from '../../components/ui';
 import {
   fetchAgentMe,
-  updateAgentPassword,
   updateAgentProfile,
   uploadAgentPhoto,
 } from '../../api/agent';
@@ -20,12 +19,6 @@ type ProfileForm = {
   agentCode: string;
 };
 
-type PasswordForm = {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-};
-
 export function ProfilePage() {
   const {agent, logout, setAgent, refresh} = useAuth();
   const navigate = useNavigate();
@@ -37,12 +30,6 @@ export function ProfilePage() {
     phone: '',
     agentCode: '',
   });
-  const [passwords, setPasswords] = useState<PasswordForm>({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-  const [passwordError, setPasswordError] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -106,44 +93,6 @@ export function ProfilePage() {
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : 'Failed to update profile.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onUpdatePassword(event: FormEvent) {
-    event.preventDefault();
-    if (!passwords.currentPassword.trim()) {
-      setPasswordError('Enter your current password.');
-      return;
-    }
-    if (passwords.newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters.');
-      return;
-    }
-    if (passwords.newPassword !== passwords.confirmPassword) {
-      setPasswordError('New password and confirmation do not match.');
-      return;
-    }
-    setPasswordError('');
-    setMessage('');
-    setError('');
-    setBusy(true);
-    try {
-      await updateAgentPassword(
-        passwords.currentPassword,
-        passwords.newPassword,
-      );
-      setPasswords({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      });
-      setMessage('Password updated.');
-    } catch (err) {
-      setPasswordError(
-        err instanceof ApiError ? err.message : 'Failed to update password.',
       );
     } finally {
       setBusy(false);
@@ -278,60 +227,11 @@ export function ProfilePage() {
           <Shield size={18} />
           Security
         </h2>
-        <form className={styles.securityForm} onSubmit={onUpdatePassword}>
-          <Input
-            name="currentPassword"
-            type="password"
-            placeholder="Enter Password"
-            value={passwords.currentPassword}
-            onChange={event => {
-              setPasswords(prev => ({
-                ...prev,
-                currentPassword: event.target.value,
-              }));
-              if (passwordError) setPasswordError('');
-            }}
-            autoComplete="current-password"
-          />
-          <Input
-            name="newPassword"
-            type="password"
-            placeholder="New Password"
-            value={passwords.newPassword}
-            onChange={event => {
-              setPasswords(prev => ({
-                ...prev,
-                newPassword: event.target.value,
-              }));
-              if (passwordError) setPasswordError('');
-            }}
-            autoComplete="new-password"
-          />
-          <Input
-            name="confirmPassword"
-            type="password"
-            placeholder="Confirm New Password"
-            value={passwords.confirmPassword}
-            onChange={event => {
-              setPasswords(prev => ({
-                ...prev,
-                confirmPassword: event.target.value,
-              }));
-              if (passwordError) setPasswordError('');
-            }}
-            autoComplete="new-password"
-            error={passwordError}
-          />
-          <Button
-            type="submit"
-            variant="primary"
-            fullWidth
-            size="lg"
-            disabled={busy}
-          >
-            Update Password
-          </Button>
-        </form>
+        <p className={styles.securityNote}>
+          <Lock size={16} />
+          Your password is set by the admin and can&apos;t be changed here.
+          Contact the admin if you need it reset.
+        </p>
       </Card>
 
       <Button

@@ -2,6 +2,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Filter, MoreVertical, Plus, Search} from 'lucide-react';
 import {Avatar, Badge, Button, Card, Table, type TableColumn} from '../../components/ui';
+import {ReceiverStatusBadge} from '../../components/receivers/ReceiverStatusBadge/ReceiverStatusBadge';
 import {
   fetchReceiverStats,
   listReceivers,
@@ -11,9 +12,7 @@ import {
   formatHours,
   formatInr,
   levelTone,
-  statusTone,
   type ReceiverListItem,
-  type ReceiverStatus,
 } from '../../data/mockReceivers';
 import styles from './ReceiversPage.module.css';
 
@@ -110,7 +109,7 @@ export function ReceiversPage() {
       key: 'status',
       header: 'Status',
       render: row => (
-        <Badge tone={statusTone(row.status as ReceiverStatus)}>{row.status}</Badge>
+        <ReceiverStatusBadge status={row.status} stage={row.stage} />
       ),
     },
     {

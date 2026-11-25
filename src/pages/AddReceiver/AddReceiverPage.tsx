@@ -1,4 +1,4 @@
-import {useMemo, useState, type FormEvent} from 'react';
+import {useEffect, useMemo, useState, type FormEvent} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {
   ArrowLeft,
@@ -18,7 +18,11 @@ import {
   Select,
   SelectionCardGroup,
 } from '../../components/ui';
-import {createReceiver as createReceiverApi} from '../../api/agent';
+import {
+  createReceiver as createReceiverApi,
+  fetchCallRates,
+  type AgentCallRate,
+} from '../../api/agent';
 import {ApiError} from '../../api/client';
 import styles from './AddReceiverPage.module.css';
 
@@ -46,11 +50,14 @@ const GENDER_OPTIONS = [
   {value: 'other', label: 'Other'},
 ];
 
-const LEVEL_OPTIONS = [
-  {value: '1', title: 'Level 1', subtitle: '2000 coins/min'},
-  {value: '2', title: 'Level 2', subtitle: '1800 coins/min'},
-  {value: '3', title: 'Level 3', subtitle: '1600 coins/min'},
-];
+/** Level choices come from the admin Call Rates settings, not hardcoded. */
+function toLevelOptions(rates: AgentCallRate[]) {
+  return rates.map(rate => ({
+    value: String(rate.level),
+    title: rate.label,
+    subtitle: `${rate.coinsPerMinute.toLocaleString('en-IN')} coins/min`,
+  }));
+}
 
 const NEXT_STEPS = [
   'Share the onboarding link with the receiver via WhatsApp or other messaging platforms.',
@@ -87,6 +94,22 @@ export function AddReceiverPage() {
   const [showQr, setShowQr] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [levelOptions, setLevelOptions] = useState<ReturnType<typeof toLevelOptions>>([]);
+  const [ratesError, setRatesError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCallRates()
+      .then(result => {
+        if (!cancelled) setLevelOptions(toLevelOptions(result.rates || []));
+      })
+      .catch(() => {
+        if (!cancelled) setRatesError('Could not load levels and rates. Please refresh.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const isFormComplete = useMemo(() => {
     const ageNum = Number(form.age);
@@ -114,7 +137,7 @@ export function AddReceiverPage() {
     return Object.keys(next).length === 0;
   }
 
-  async function submitReceiver(asDraft: boolean, event?: FormEvent) {
+  async function createReceiver(event?: FormEvent) {
     event?.preventDefault();
     if (!validate()) return;
 
@@ -127,14 +150,7 @@ export function AddReceiverPage() {
         age: Number(form.age),
         gender: form.gender as Gender,
         level: Number(form.level),
-        asDraft,
       });
-
-      if (asDraft) {
-        window.alert('Receiver saved as draft.');
-        navigate('/receivers');
-        return;
-      }
 
       setCreated({
         name,
@@ -152,14 +168,6 @@ export function AddReceiverPage() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function createReceiver(event?: FormEvent) {
-    void submitReceiver(false, event);
-  }
-
-  function saveReceiver() {
-    void submitReceiver(true);
   }
 
   async function copyLink() {
@@ -388,10 +396,10 @@ export function AddReceiverPage() {
           <SelectionCardGroup
             label="Level"
             labelIcon={<Medal size={15} />}
-            options={LEVEL_OPTIONS}
+            options={levelOptions}
             value={form.level}
             onChange={value => setForm(prev => ({...prev, level: value as Level}))}
-            error={errors.level}
+            error={errors.level || ratesError}
           />
 
           {formError ? (
@@ -416,9 +424,9 @@ export function AddReceiverPage() {
               size="lg"
               fullWidth
               disabled={submitting}
-              onClick={saveReceiver}
+              onClick={() => navigate('/receivers')}
             >
-              Save Receiver
+              View Receivers
             </Button>
           </div>
         </form>

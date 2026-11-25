@@ -14,12 +14,14 @@ import {
 } from '../../data/mockReceivers';
 import styles from './ShareCredentialDetailPage.module.css';
 
-type CopiedField = 'loginId' | 'temporaryPassword' | null;
+type CopiedField = 'loginId' | 'temporaryPassword' | 'onboardingLink' | null;
 
 export function ShareCredentialDetailPage() {
   const {id = ''} = useParams();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<ReceiverProfile | null>(null);
+  const [profile, setProfile] = useState<
+    (ReceiverProfile & {onboardingLink?: string}) | null
+  >(null);
   const [credentials, setCredentials] = useState<ReceiverCredentials | null>(
     null,
   );
@@ -89,9 +91,12 @@ export function ShareCredentialDetailPage() {
   }
 
   function shareCredentials() {
+    const linkLine = profile!.onboardingLink
+      ? `\nOnboarding Link: ${profile!.onboardingLink}`
+      : '';
     const text = `Callkaro login credentials for ${profile!.name}
 Login ID: ${credentials!.loginId}
-Temporary Password: ${credentials!.temporaryPassword}`;
+Temporary Password: ${credentials!.temporaryPassword}${linkLine}`;
 
     if (navigator.share) {
       void navigator.share({
@@ -182,6 +187,34 @@ Temporary Password: ${credentials!.temporaryPassword}`;
             </button>
           </div>
         </label>
+
+        {profile.onboardingLink ? (
+          <label className={styles.field} htmlFor="onboarding-link">
+            <span className={styles.label}>Onboarding Link</span>
+            <div className={styles.inputRow}>
+              <input
+                id="onboarding-link"
+                className={styles.input}
+                value={profile.onboardingLink}
+                readOnly
+              />
+              <button
+                type="button"
+                className={styles.copyBtn}
+                aria-label="Copy onboarding link"
+                onClick={() =>
+                  copyValue('onboardingLink', profile.onboardingLink!)
+                }
+              >
+                {copied === 'onboardingLink' ? (
+                  <Check size={16} />
+                ) : (
+                  <Copy size={16} />
+                )}
+              </button>
+            </div>
+          </label>
+        ) : null}
       </div>
 
       <div className={styles.actions}>

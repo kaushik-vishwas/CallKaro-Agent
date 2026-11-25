@@ -4,6 +4,8 @@ import {ArrowLeft, Check, Download, Play, Plus, X} from 'lucide-react';
 import {Badge, Button, Card, Input, TextArea} from '../../components/ui';
 import {
   fetchReceiver,
+  approveReceiverByAgent,
+  rejectReceiverByAgent,
   submitReceiverForReview,
   updateReceiverProxyProfile,
   uploadAgentPhoto,
@@ -78,6 +80,8 @@ export function ReviewReceiverPage() {
   const [proxyVideoOpen, setProxyVideoOpen] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [proxyDraft, setProxyDraft] = useState<ProxyDraft>(emptyProxyDraft());
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +118,16 @@ export function ReviewReceiverPage() {
 
   if (notFound || !profile) {
     return <Navigate to="/receivers" replace />;
+  }
+
+  // Backend status key (the label "Pending Review" covers two states).
+  const statusKey = (profile as ReceiverProfile & {statusKey?: string}).statusKey;
+
+  async function refreshProfile() {
+    const refreshed = await fetchReceiver(profile!.id);
+    setProfile(refreshed.receiver);
+    setPhotos(refreshed.receiver.photos ?? []);
+    setProxyDraft(draftFromProfile(refreshed.receiver));
   }
 
   async function runAction(fn: () => Promise<void>) {
@@ -221,7 +235,7 @@ export function ReviewReceiverPage() {
           </Link>
           <h1 className={styles.title}>Receiver Profile</h1>
           <p className={styles.subtitle}>
-            View receiver details. Approvals are handled by admin.
+            Review the receiver. You approve first, then admin gives final approval.
           </p>
         </div>
         <div className={styles.actions}>
@@ -243,6 +257,36 @@ export function ReviewReceiverPage() {
               Submit for Review
             </Button>
           ) : null}
+          {statusKey === 'pending_review' ? (
+            <>
+              <Button
+                variant="primary"
+                leftIcon={<Check size={16} />}
+                disabled={busy}
+                onClick={() =>
+                  void runAction(async () => {
+                    await approveReceiverByAgent(profile.id);
+                    await refreshProfile();
+                  })
+                }
+              >
+                Approve
+              </Button>
+              <Button
+                variant="outline"
+                leftIcon={<X size={16} />}
+                disabled={busy}
+                onClick={() => setRejectOpen(true)}
+              >
+                Reject
+              </Button>
+            </>
+          ) : null}
+          {statusKey === 'agent_approved' ? (
+            <p style={{margin: 0, color: '#047857', fontWeight: 600}}>
+              Approved by you. Waiting for admin approval.
+            </p>
+          ) : null}
           <Button
             variant="outline"
             onClick={() => navigate(`/share-credentials/${profile.id}`)}
@@ -254,6 +298,50 @@ export function ReviewReceiverPage() {
 
       {actionError ? (
         <p style={{color: '#dc2626', marginBottom: 16}}>{actionError}</p>
+      ) : null}
+
+      {rejectOpen ? (
+        <div style={{marginBottom: 16, display: 'grid', gap: 10}}>
+          <textarea
+            value={rejectReason}
+            onChange={event => setRejectReason(event.target.value)}
+            placeholder="Tell the receiver what needs to change"
+            rows={3}
+            style={{
+              width: '100%',
+              padding: 10,
+              borderRadius: 8,
+              border: '1px solid #d1d5db',
+              font: 'inherit',
+            }}
+          />
+          <div style={{display: 'flex', gap: 10, justifyContent: 'flex-end'}}>
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => {
+                setRejectOpen(false);
+                setRejectReason('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              disabled={busy || !rejectReason.trim()}
+              onClick={() =>
+                void runAction(async () => {
+                  await rejectReceiverByAgent(profile.id, rejectReason.trim());
+                  setRejectOpen(false);
+                  setRejectReason('');
+                  await refreshProfile();
+                })
+              }
+            >
+              Confirm Reject
+            </Button>
+          </div>
+        </div>
       ) : null}
       {proxyMessage ? (
         <p style={{color: '#059669', marginBottom: 16}}>{proxyMessage}</p>

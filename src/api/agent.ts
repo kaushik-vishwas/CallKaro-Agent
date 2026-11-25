@@ -36,6 +36,18 @@ export async function loginAgent(email: string, password: string) {
   });
 }
 
+/** Per-minute call rate for a receiver category, set by admin (Call Rates tab). */
+export type AgentCallRate = {
+  level: number;
+  label: string;
+  coinsPerMinute: number;
+  receiverSharePerMinute: number;
+};
+
+export async function fetchCallRates() {
+  return apiRequest<{rates: AgentCallRate[]}>('/agent/call-rates');
+}
+
 export async function fetchAgentMe() {
   return apiRequest<{agent: Agent}>('/agent/me');
 }
@@ -51,15 +63,6 @@ export async function updateAgentProfile(payload: {
   });
 }
 
-export async function updateAgentPassword(
-  currentPassword: string,
-  newPassword: string,
-) {
-  return apiRequest<Record<string, never>>('/agent/update-password', {
-    method: 'POST',
-    body: JSON.stringify({currentPassword, newPassword}),
-  });
-}
 
 export async function createReceiver(payload: {
   name: string;
@@ -185,6 +188,21 @@ export async function submitReceiverForReview(id: string) {
   return apiRequest<{receiver: ReceiverProfile}>(
     `/agent/receivers/${id}/submit-for-review`,
     {method: 'POST', body: JSON.stringify({})},
+  );
+}
+
+/** Agent approval (step 1 of 2). Admin approval follows. */
+export async function approveReceiverByAgent(id: string) {
+  return apiRequest<{receiver: ReceiverProfile}>(
+    `/agent/receivers/${id}/approve`,
+    {method: 'POST', body: JSON.stringify({})},
+  );
+}
+
+export async function rejectReceiverByAgent(id: string, reason: string) {
+  return apiRequest<{receiver: ReceiverProfile}>(
+    `/agent/receivers/${id}/reject`,
+    {method: 'POST', body: JSON.stringify({reason})},
   );
 }
 
